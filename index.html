@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskDoIt - To-Do List</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div id="app-shell" class="app-shell">
+      <main id="task-panel" class="task-panel" aria-label="Task Panel">
+        <header class="panel-header">
+          <div class="panel-heading">
+            <h1>TaskDoIt</h1>
+            <p>Your single list for everything that matters.</p>
+          </div>
+          <div
+            id="panel-future-slot"
+            class="panel-future-slot"
+            aria-label="Reserved for future search and filter controls"
+          ></div>
+        </header>
+
+        <section id="task-list" class="task-list" aria-live="polite">
+          <article class="empty-state" data-empty-state>
+            <h2>No tasks yet</h2>
+            <p>Add your first task below.</p>
+          </article>
+        </section>
+
+        <section class="composer" aria-label="Task Composer">
+          <div class="format-toolbar" role="toolbar" aria-label="Text formatting">
+            <button type="button" class="format-button" data-format="bold" aria-label="Bold">
+              <strong>B</strong>
+            </button>
+            <button type="button" class="format-button" data-format="italic" aria-label="Italic">
+              <em>I</em>
+            </button>
+            <button
+              type="button"
+              class="format-button"
+              data-format="underline"
+              aria-label="Underline"
+            >
+              <span class="underline-mark">U</span>
+            </button>
+          </div>
+
+          <div
+            id="editor"
+            class="editor"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            aria-label="Write a task"
+            data-placeholder="Type a task and style it if you want..."
+          ></div>
+
+          <button id="add-task" class="add-task" type="button">Add Task</button>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
