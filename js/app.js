@@ -39,7 +39,48 @@ function initApp() {
     focusEditor(editorEl);
   }
 
+  function handleTaskActionClick(event) {
+    const actionEl = event.target.closest("[data-action]");
+    if (!actionEl) {
+      return;
+    }
+
+    const taskCard = actionEl.closest(".task-item");
+    if (!taskCard) {
+      return;
+    }
+
+    const taskId = taskCard.dataset.taskId;
+    if (!taskId) {
+      return;
+    }
+
+    const taskIndex = state.tasks.findIndex((task) => task.id === taskId);
+    if (taskIndex === -1) {
+      return;
+    }
+
+    const action = actionEl.dataset.action;
+    if (action === "toggle-complete") {
+      const existingTask = state.tasks[taskIndex];
+      const completed = !existingTask.completed;
+      state.tasks[taskIndex] = {
+        ...existingTask,
+        completed,
+        completedAt: completed ? new Date().toISOString() : null,
+      };
+      renderTasks(taskListEl, state.tasks);
+      return;
+    }
+
+    if (action === "delete-task") {
+      state.tasks.splice(taskIndex, 1);
+      renderTasks(taskListEl, state.tasks);
+    }
+  }
+
   addTaskBtn.addEventListener("click", handleAddTask);
+  taskListEl.addEventListener("click", handleTaskActionClick);
 }
 
 document.addEventListener("DOMContentLoaded", initApp);
