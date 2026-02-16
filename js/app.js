@@ -367,7 +367,7 @@ function initApp() {
   saveState(state);
 
   function resetTemplateMenuPlacement() {
-    templateMenuEl.classList.remove("is-open-up", "is-side-right", "is-side-left");
+    templateMenuEl.classList.remove("is-open-up", "is-open-down", "is-side-right", "is-side-left");
     templateMenuEl.style.maxHeight = "";
     templateOptionsEl.style.maxHeight = "";
   }
@@ -376,14 +376,26 @@ function initApp() {
     const visibleChildren = Array.from(templateMenuEl.children).filter((child) => !child.hidden);
     const nonListChildren = visibleChildren.filter((child) => child !== templateOptionsEl);
     const menuStyles = window.getComputedStyle(templateMenuEl);
-    const rowGap = parseFloat(menuStyles.rowGap || menuStyles.gap || "0") || 0;
+    const menuRowGap = parseFloat(menuStyles.rowGap || menuStyles.gap || "0") || 0;
     const siblingHeights = nonListChildren.reduce(
       (sum, child) => sum + child.getBoundingClientRect().height,
       0
     );
     const availableHeight =
-      templateMenuEl.clientHeight - siblingHeights - rowGap * Math.max(0, visibleChildren.length - 1);
-    templateOptionsEl.style.maxHeight = `${Math.max(56, Math.floor(availableHeight))}px`;
+      templateMenuEl.clientHeight -
+      siblingHeights -
+      menuRowGap * Math.max(0, visibleChildren.length - 1);
+
+    const optionStyles = window.getComputedStyle(templateOptionsEl);
+    const optionRowGap = parseFloat(optionStyles.rowGap || optionStyles.gap || "0") || 0;
+    const firstRow = templateOptionsEl.querySelector(".template-option-row");
+    const rowHeight = firstRow ? firstRow.getBoundingClientRect().height : 30;
+    const maxVisibleRows = 6;
+    const sixRowCap =
+      rowHeight * maxVisibleRows + optionRowGap * Math.max(0, maxVisibleRows - 1);
+    const nextMaxHeight = Math.max(56, Math.floor(Math.min(availableHeight, sixRowCap)));
+
+    templateOptionsEl.style.maxHeight = `${nextMaxHeight}px`;
   }
 
   function updateTemplateMenuPlacement() {
@@ -412,19 +424,19 @@ function initApp() {
     const canOpenBelow = spaceBelow >= Math.max(150, menuHeight * 0.55);
     const canOpenAbove = spaceAbove >= Math.max(150, menuHeight * 0.55);
 
-    let maxHeight = Math.max(140, Math.min(320, spaceBelow));
+    let maxHeight = Math.max(140, Math.min(320, spaceAbove));
 
-    if (!canOpenBelow && (canOpenRight || canOpenLeft)) {
+    if (!canOpenAbove && canOpenBelow) {
+      templateMenuEl.classList.add("is-open-down");
+      maxHeight = Math.max(140, Math.min(320, spaceBelow));
+    } else if (!canOpenAbove && !canOpenBelow && (canOpenRight || canOpenLeft)) {
       if (canOpenRight) {
         templateMenuEl.classList.add("is-side-right");
       } else {
         templateMenuEl.classList.add("is-side-left");
       }
       maxHeight = Math.max(140, Math.min(360, viewportHeight - toggleRect.top - viewportPadding));
-    } else if (!canOpenBelow && canOpenAbove) {
-      templateMenuEl.classList.add("is-open-up");
-      maxHeight = Math.max(140, Math.min(320, spaceAbove));
-    } else if (!canOpenBelow && !canOpenAbove) {
+    } else if (!canOpenAbove && !canOpenBelow) {
       maxHeight = Math.max(140, Math.min(320, viewportHeight - viewportPadding * 2));
     }
 
@@ -676,8 +688,9 @@ function initApp() {
     saveState(state);
 
     renderApp();
-    setTemplateMenuOpen(false);
-    focusEditor(editorEl);
+    setTemplateMenuOpen(true);
+    templateAddInputEl.value = "";
+    templateAddInputEl.focus();
   }
 
   function handleTemplateToggleClick() {

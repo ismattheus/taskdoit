@@ -1,5 +1,6 @@
 :root {
   --panel-width: min(880px, 100%);
+  --template-control-width: min(248px, 76vw);
   --bg-base: #fff2e8;
   --bg-layer: #ffe9d8;
   --panel-bg: rgba(255, 248, 240, 0.9);
@@ -395,7 +396,10 @@ textarea {
 
 .template-picker {
   position: relative;
-  min-width: clamp(148px, 24vw, 224px);
+  order: -1;
+  width: var(--template-control-width);
+  min-width: var(--template-control-width);
+  flex: 0 0 var(--template-control-width);
 }
 
 .template-toggle {
@@ -430,9 +434,11 @@ textarea {
 
 .template-menu {
   position: absolute;
-  top: calc(100% + 0.32rem);
-  right: 0;
-  width: min(280px, 82vw);
+  top: auto;
+  bottom: calc(100% + 0.32rem);
+  left: 0;
+  right: auto;
+  width: var(--template-control-width);
   border: 1px solid rgba(190, 110, 66, 0.42);
   border-radius: 8px;
   background: #fff8f0;
@@ -441,7 +447,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0.28rem;
-  max-height: min(320px, 70vh);
+  max-height: min(300px, 66vh);
   overflow: hidden;
   z-index: 20;
 }
@@ -453,6 +459,11 @@ textarea {
 .template-menu.is-open-up {
   top: auto;
   bottom: calc(100% + 0.32rem);
+}
+
+.template-menu.is-open-down {
+  top: calc(100% + 0.32rem);
+  bottom: auto;
 }
 
 .template-menu.is-side-right {
@@ -473,9 +484,9 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
-  max-height: min(200px, 45vh);
+  max-height: min(188px, 42vh);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -671,8 +682,9 @@ textarea {
   }
 
   .template-picker {
-    flex: 1 1 140px;
-    min-width: 0;
+    width: var(--template-control-width);
+    min-width: var(--template-control-width);
+    flex: 0 0 var(--template-control-width);
   }
 
   .composer {
