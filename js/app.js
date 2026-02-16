@@ -18,6 +18,7 @@ const FILTER_VALUE_NONE = "__none__";
 const FILTER_VALUE_TEMPLATE_PREFIX = "__tpl__:";
 const VIEW_MODE_TASKS = "tasks";
 const VIEW_MODE_COMPLETED = "completed";
+const TASK_COMPLETE_ANIMATION_MS = 440;
 
 function sanitizeTemplateName(value) {
   if (typeof value !== "string") {
@@ -364,6 +365,7 @@ function initApp() {
   const state = loadState();
   let templateMenuOpen = false;
   let placementRafId = 0;
+  const pendingCompletionTimers = new Map();
   saveState(state);
 
   function resetTemplateMenuPlacement() {
@@ -605,6 +607,41 @@ function initApp() {
     const action = actionEl.dataset.action;
     if (action === "toggle-complete") {
       const existingTask = state.tasks[taskIndex];
+
+      if (
+        !existingTask.completed &&
+        state.activeView === VIEW_MODE_TASKS &&
+        !taskCard.classList.contains("is-completing")
+      ) {
+        const toggleButton = actionEl.closest(".task-toggle");
+        if (toggleButton) {
+          toggleButton.classList.add("is-complete");
+          toggleButton.textContent = "✓";
+          toggleButton.setAttribute("aria-pressed", "true");
+          toggleButton.setAttribute("aria-label", "Mark as incomplete");
+        }
+
+        taskCard.classList.add("is-completing");
+        const timerId = window.setTimeout(() => {
+          pendingCompletionTimers.delete(taskId);
+          const pendingTaskIndex = state.tasks.findIndex((task) => task.id === taskId);
+          if (pendingTaskIndex === -1) {
+            return;
+          }
+
+          const pendingTask = state.tasks[pendingTaskIndex];
+          state.tasks[pendingTaskIndex] = {
+            ...pendingTask,
+            completed: true,
+            completedAt: new Date().toISOString(),
+          };
+          saveState(state);
+          renderApp();
+        }, TASK_COMPLETE_ANIMATION_MS);
+        pendingCompletionTimers.set(taskId, timerId);
+        return;
+      }
+
       const completed = !existingTask.completed;
       state.tasks[taskIndex] = {
         ...existingTask,
@@ -617,6 +654,11 @@ function initApp() {
     }
 
     if (action === "delete-task") {
+      const pendingTimerId = pendingCompletionTimers.get(taskId);
+      if (pendingTimerId) {
+        window.clearTimeout(pendingTimerId);
+        pendingCompletionTimers.delete(taskId);
+      }
       state.tasks.splice(taskIndex, 1);
       saveState(state);
       renderApp();

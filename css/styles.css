@@ -250,11 +250,65 @@ textarea {
 }
 
 .task-item {
+  position: relative;
+  overflow: hidden;
   border-radius: 8px;
   border: 1px solid rgba(196, 116, 70, 0.28);
   background: #fffcf8;
   box-shadow: var(--shadow-sm);
   padding: 0.44rem 0.56rem;
+  transition: transform 0.18s ease, box-shadow 0.22s ease, border-color 0.22s ease,
+    background-color 0.22s ease;
+}
+
+.task-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    112deg,
+    rgba(255, 214, 187, 0) 14%,
+    rgba(255, 214, 187, 0.56) 48%,
+    rgba(255, 214, 187, 0) 82%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.42s ease, opacity 0.18s ease;
+}
+
+.task-item:hover,
+.task-item:focus-within {
+  transform: translateY(-2px);
+  border-color: rgba(206, 109, 57, 0.52);
+  background: #fff9f2;
+  box-shadow: 0 10px 20px rgba(106, 49, 20, 0.16);
+}
+
+.task-item.is-completing {
+  pointer-events: none;
+}
+
+.task-item.is-completing::before {
+  opacity: 1;
+  animation: task-complete-sweep 0.44s ease forwards;
+}
+
+@keyframes task-complete-sweep {
+  0% {
+    transform: translateX(-130%);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(130%);
+    opacity: 0.18;
+  }
 }
 
 .task-item-row {
@@ -262,6 +316,8 @@ textarea {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 0.45rem;
+  position: relative;
+  z-index: 1;
 }
 
 .task-toggle {
@@ -642,6 +698,7 @@ textarea {
 .editor[data-empty="true"]::before {
   content: attr(data-placeholder);
   color: #a07056;
+  font-size: 0.79rem;
   position: absolute;
   top: 0.53rem;
   left: 0.62rem;
