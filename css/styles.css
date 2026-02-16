@@ -573,8 +573,8 @@ textarea {
 }
 
 .editor {
-  min-height: 128px;
-  max-height: 240px;
+  min-height: 74px;
+  max-height: 132px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   position: relative;
