@@ -23,11 +23,21 @@
 
       <main id="task-panel" class="task-panel" aria-label="Task Panel">
         <header class="panel-header">
-          <div
-            id="panel-future-slot"
-            class="panel-future-slot"
-            aria-label="Reserved for future search and filter controls"
-          ></div>
+          <div class="task-filter-controls">
+            <label for="task-filter" class="task-filter-label">
+              <span class="task-filter-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" focusable="false">
+                  <path
+                    d="M2.5 4.5a1 1 0 0 1 1-1h13a1 1 0 0 1 .77 1.64L12 11.6v3.9a1 1 0 0 1-.45.83l-2 1.3A1 1 0 0 1 8 16.8v-5.2L2.73 5.14a1 1 0 0 1-.23-.64z"
+                  />
+                </svg>
+              </span>
+              <span>Filter</span>
+            </label>
+            <select id="task-filter" class="task-filter-select" aria-label="Filter tasks by template">
+              <option value="__all__">All</option>
+            </select>
+          </div>
         </header>
 
         <section id="task-list" class="task-list" aria-live="polite">
@@ -53,6 +63,54 @@
             >
               <span class="underline-mark">U</span>
             </button>
+            <div id="template-picker" class="template-picker">
+              <button
+                id="template-toggle"
+                type="button"
+                class="template-toggle"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-label="Choose template"
+              >
+                <span id="template-toggle-label">No template</span>
+                <span class="template-toggle-caret" aria-hidden="true">▾</span>
+              </button>
+              <div id="template-menu" class="template-menu" role="listbox" hidden>
+                <button
+                  type="button"
+                  class="template-option template-option-clear"
+                  data-action="select-template"
+                  data-template-value=""
+                >
+                  No template
+                </button>
+                <div
+                  id="template-options"
+                  class="template-options"
+                  tabindex="0"
+                  aria-label="Template list"
+                ></div>
+                <button
+                  id="template-add-trigger"
+                  type="button"
+                  class="template-add-trigger"
+                  data-action="start-add-template"
+                >
+                  + Add template
+                </button>
+                <form id="template-add-form" class="template-add-form" hidden>
+                  <input
+                    id="template-add-input"
+                    class="template-add-input"
+                    type="text"
+                    maxlength="32"
+                    autocomplete="off"
+                    placeholder="Type template and press Enter"
+                    aria-label="New template name"
+                  />
+                </form>
+              </div>
+            </div>
           </div>
 
           <div
@@ -62,10 +120,8 @@
             role="textbox"
             aria-multiline="true"
             aria-label="Write a task"
-            data-placeholder="Type a task and style it if you want..."
+            data-placeholder="Type a task and hit enter..."
           ></div>
-
-          <button id="add-task" class="add-task" type="button">Add Task</button>
         </section>
       </main>
     </div>

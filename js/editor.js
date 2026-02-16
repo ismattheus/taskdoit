@@ -63,6 +63,19 @@ function runFormatCommand(command) {
   document.execCommand(command, false);
 }
 
+function moveCaretToStart(editorEl) {
+  const selection = window.getSelection();
+  if (!selection) {
+    return;
+  }
+
+  const range = document.createRange();
+  range.setStart(editorEl, 0);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
 function syncEmptyState(editorEl) {
   const { plainText } = getEditorContent(editorEl);
   editorEl.dataset.empty = plainText.length === 0 ? "true" : "false";
@@ -100,6 +113,9 @@ export function initEditor(editorEl, toolbarEl) {
 
   editorEl.addEventListener("input", () => {
     syncEmptyState(editorEl);
+    if (editorEl.dataset.empty === "true" && document.activeElement === editorEl) {
+      moveCaretToStart(editorEl);
+    }
   });
 
   editorEl.addEventListener("blur", () => {
@@ -129,4 +145,11 @@ export function clearEditor(editorEl) {
 
 export function focusEditor(editorEl) {
   editorEl.focus();
+
+  // Ensure caret is visible at the start when the editor is empty.
+  if (!isEditorEmpty(editorEl)) {
+    return;
+  }
+
+  moveCaretToStart(editorEl);
 }

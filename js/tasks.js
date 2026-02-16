@@ -6,10 +6,14 @@ function createTaskId() {
   return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function createTask(contentHtml) {
+export function createTask(contentHtml, template = null) {
+  const normalizedTemplate =
+    typeof template === "string" && template.trim().length > 0 ? template.trim() : null;
+
   return {
     id: createTaskId(),
     contentHtml,
+    template: normalizedTemplate,
     createdAt: new Date().toISOString(),
     completed: false,
     completedAt: null,
@@ -18,13 +22,21 @@ export function createTask(contentHtml) {
   };
 }
 
-function renderEmptyState(container) {
-  container.innerHTML = `
-    <article class="empty-state" data-empty-state>
-      <h2>No tasks yet</h2>
-      <p>Add your first task below.</p>
-    </article>
-  `;
+function renderEmptyState(container, emptyState) {
+  const title = emptyState?.title || "No tasks yet";
+  const copy = emptyState?.copy || "Add your first task below.";
+  const article = document.createElement("article");
+  article.className = "empty-state";
+  article.dataset.emptyState = "";
+
+  const heading = document.createElement("h2");
+  heading.textContent = title;
+
+  const paragraph = document.createElement("p");
+  paragraph.textContent = copy;
+
+  article.append(heading, paragraph);
+  container.append(article);
 }
 
 function createTaskElement(task) {
@@ -51,6 +63,9 @@ function createTaskElement(task) {
 
   const content = document.createElement("div");
   content.className = "task-item-content";
+  if (typeof task.template === "string" && task.template.trim().length > 0) {
+    content.dataset.template = task.template.trim();
+  }
   content.innerHTML = task.contentHtml;
 
   const deleteButton = document.createElement("button");
@@ -65,11 +80,11 @@ function createTaskElement(task) {
   return article;
 }
 
-export function renderTasks(container, tasks) {
+export function renderTasks(container, tasks, options = {}) {
   container.innerHTML = "";
 
   if (!tasks.length) {
-    renderEmptyState(container);
+    renderEmptyState(container, options.emptyState);
     return;
   }
 
