@@ -16,6 +16,8 @@ const FILTER_MODE_NONE = "none";
 const FILTER_VALUE_ALL = "__all__";
 const FILTER_VALUE_NONE = "__none__";
 const FILTER_VALUE_TEMPLATE_PREFIX = "__tpl__:";
+const VIEW_MODE_TASKS = "tasks";
+const VIEW_MODE_COMPLETED = "completed";
 
 function sanitizeTemplateName(value) {
   if (typeof value !== "string") {
@@ -100,6 +102,10 @@ function resolveActiveFilter(activeFilter, templates) {
   return template || FILTER_MODE_ALL;
 }
 
+function resolveActiveView(activeView) {
+  return activeView === VIEW_MODE_COMPLETED ? VIEW_MODE_COMPLETED : VIEW_MODE_TASKS;
+}
+
 function toFilterValue(activeFilter) {
   if (activeFilter === FILTER_MODE_ALL) {
     return FILTER_VALUE_ALL;
@@ -135,6 +141,7 @@ function loadState() {
     templates: [],
     composerTemplate: null,
     activeFilter: FILTER_MODE_ALL,
+    activeView: VIEW_MODE_TASKS,
   };
 
   try {
@@ -178,6 +185,7 @@ function loadState() {
           : parsed.activeFilter,
         templates
       ),
+      activeView: resolveActiveView(parsed.activeView),
     };
   } catch {
     return fallback;
@@ -193,6 +201,7 @@ function saveState(state) {
         tasks: state.tasks,
         templates: state.templates,
         activeFilter: state.activeFilter,
+        activeView: state.activeView,
       })
     );
   } catch {
@@ -225,22 +234,39 @@ function fillFilterSelect(selectEl, templates, activeFilter) {
   selectEl.value = toFilterValue(resolveActiveFilter(activeFilter, templates));
 }
 
+function getTasksForActiveView(state) {
+  if (state.activeView === VIEW_MODE_COMPLETED) {
+    return state.tasks.filter((task) => task.completed);
+  }
+
+  return state.tasks.filter((task) => !task.completed);
+}
+
 function getVisibleTasks(state) {
+  const tabTasks = getTasksForActiveView(state);
   if (state.activeFilter === FILTER_MODE_ALL) {
-    return state.tasks;
+    return tabTasks;
   }
 
   if (state.activeFilter === FILTER_MODE_NONE) {
-    return state.tasks.filter(
+    return tabTasks.filter(
       (task) => !(typeof task.template === "string" && task.template.trim().length > 0)
     );
   }
 
-  return state.tasks.filter((task) => task.template === state.activeFilter);
+  return tabTasks.filter((task) => task.template === state.activeFilter);
 }
 
 function getEmptyState(state, visibleTasks) {
-  if (state.tasks.length === 0) {
+  if (state.activeView === VIEW_MODE_COMPLETED && visibleTasks.length === 0) {
+    return {
+      title: "No completed tasks yet",
+      copy: "",
+    };
+  }
+
+  const tabTasks = getTasksForActiveView(state);
+  if (tabTasks.length === 0) {
     return null;
   }
 
@@ -300,8 +326,10 @@ function deleteTemplateFromState(state, templateName) {
 function initApp() {
   const taskListEl = document.getElementById("task-list");
   const editorEl = document.getElementById("editor");
+  const composerEl = document.querySelector(".composer");
   const toolbarEl = document.querySelector(".format-toolbar");
   const filterSelectEl = document.getElementById("task-filter");
+  const completedTabToggleEl = document.getElementById("completed-tab-toggle");
 
   const templatePickerEl = document.getElementById("template-picker");
   const templateToggleEl = document.getElementById("template-toggle");
@@ -316,8 +344,10 @@ function initApp() {
   if (
     !taskListEl ||
     !editorEl ||
+    !composerEl ||
     !toolbarEl ||
     !filterSelectEl ||
+    !completedTabToggleEl ||
     !templatePickerEl ||
     !templateToggleEl ||
     !templateToggleLabelEl ||
@@ -486,6 +516,18 @@ function initApp() {
   }
 
   function renderApp() {
+    const isCompletedView = state.activeView === VIEW_MODE_COMPLETED;
+    completedTabToggleEl.classList.toggle("is-active", isCompletedView);
+    completedTabToggleEl.textContent = isCompletedView ? "Tasks" : "Completed";
+    completedTabToggleEl.setAttribute(
+      "aria-label",
+      isCompletedView ? "Back to active tasks" : "Open completed tasks"
+    );
+    composerEl.classList.toggle("is-hidden", isCompletedView);
+    if (isCompletedView && templateMenuOpen) {
+      setTemplateMenuOpen(false);
+    }
+
     renderTemplateDropdown();
     fillFilterSelect(filterSelectEl, state.templates, state.activeFilter);
 
@@ -495,6 +537,10 @@ function initApp() {
   }
 
   function handleAddTask() {
+    if (state.activeView !== VIEW_MODE_TASKS) {
+      return;
+    }
+
     if (isEditorEmpty(editorEl)) {
       focusEditor(editorEl);
       return;
@@ -572,6 +618,20 @@ function initApp() {
     renderApp();
   }
 
+  function handleCompletedTabToggle() {
+    state.activeView =
+      state.activeView === VIEW_MODE_COMPLETED ? VIEW_MODE_TASKS : VIEW_MODE_COMPLETED;
+    saveState(state);
+    renderApp();
+
+    if (state.activeView === VIEW_MODE_TASKS) {
+      focusEditor(editorEl);
+      return;
+    }
+
+    editorEl.blur();
+  }
+
   function handleTemplateMenuAction(event) {
     const actionEl = event.target.closest("[data-action]");
     if (!actionEl) {
@@ -644,8 +704,12 @@ function initApp() {
     scheduleTemplateMenuPlacement();
   }
 
-  function handleDocumentScroll() {
+  function handleDocumentScroll(event) {
     if (!templateMenuOpen) {
+      return;
+    }
+
+    if (event?.target && templatePickerEl.contains(event.target)) {
       return;
     }
 
@@ -674,28 +738,20 @@ function initApp() {
     templateToggleEl.focus();
   }
 
-  function handleTemplateOptionsWheel(event) {
-    if (templateOptionsEl.scrollHeight <= templateOptionsEl.clientHeight) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    templateOptionsEl.scrollTop += event.deltaY;
-  }
-
   initEditor(editorEl, toolbarEl);
   renderApp();
-  focusEditor(editorEl);
+  if (state.activeView === VIEW_MODE_TASKS) {
+    focusEditor(editorEl);
+  }
 
   editorEl.addEventListener("keydown", handleEditorKeydown);
   taskListEl.addEventListener("click", handleTaskActionClick);
+  completedTabToggleEl.addEventListener("click", handleCompletedTabToggle);
   filterSelectEl.addEventListener("change", handleFilterChange);
   templateToggleEl.addEventListener("click", handleTemplateToggleClick);
   templateMenuEl.addEventListener("click", handleTemplateMenuAction);
   templateAddFormEl.addEventListener("submit", handleTemplateAddSubmit);
   templateAddInputEl.addEventListener("keydown", handleTemplateAddInputKeydown);
-  templateOptionsEl.addEventListener("wheel", handleTemplateOptionsWheel, { passive: false });
   document.addEventListener("pointerdown", handleTemplatePickerOutsidePointerDown);
   document.addEventListener("keydown", handleTemplatePickerKeydown);
   window.addEventListener("resize", handleViewportResize);

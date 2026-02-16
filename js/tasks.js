@@ -24,7 +24,7 @@ export function createTask(contentHtml, template = null) {
 
 function renderEmptyState(container, emptyState) {
   const title = emptyState?.title || "No tasks yet";
-  const copy = emptyState?.copy || "Add your first task below.";
+  const copy = typeof emptyState?.copy === "string" ? emptyState.copy : "";
   const article = document.createElement("article");
   article.className = "empty-state";
   article.dataset.emptyState = "";
@@ -32,10 +32,12 @@ function renderEmptyState(container, emptyState) {
   const heading = document.createElement("h2");
   heading.textContent = title;
 
-  const paragraph = document.createElement("p");
-  paragraph.textContent = copy;
-
-  article.append(heading, paragraph);
+  article.append(heading);
+  if (copy.trim().length > 0) {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = copy;
+    article.append(paragraph);
+  }
   container.append(article);
 }
 

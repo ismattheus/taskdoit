@@ -131,14 +131,48 @@ textarea {
 .panel-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
   min-height: 1.9rem;
+}
+
+.panel-view-controls {
+  display: flex;
+  align-items: center;
+}
+
+.panel-view-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(190, 110, 66, 0.42);
+  border-radius: 6px;
+  background: #fffaf5;
+  color: var(--text-main);
+  height: 1.82rem;
+  padding: 0 0.58rem;
+  font-size: 0.77rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.panel-view-button:hover {
+  transform: translateY(-1px);
+  background: var(--accent-soft);
+  border-color: rgba(206, 109, 57, 0.65);
+}
+
+.panel-view-button.is-active {
+  color: var(--text-main);
+  border-color: rgba(190, 110, 66, 0.42);
+  background: #fffaf5;
 }
 
 .task-filter-controls {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  margin-left: auto;
 }
 
 .task-filter-label {
@@ -196,22 +230,22 @@ textarea {
 .empty-state {
   margin: auto;
   width: min(420px, 100%);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(201, 121, 74, 0.32);
-  background: #fff6ee;
+  border: none;
+  background: transparent;
   text-align: center;
-  padding: 1.1rem;
-  box-shadow: var(--shadow-sm);
+  padding: 0;
+  box-shadow: none;
 }
 
 .empty-state h2 {
-  margin: 0 0 var(--space-1);
+  margin: 0;
   font-size: 1rem;
+  color: var(--text-main);
 }
 
 .empty-state p {
-  margin: 0;
-  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
+  color: var(--text-main);
 }
 
 .task-item {
@@ -327,6 +361,10 @@ textarea {
   padding: 0.58rem 0.62rem;
   display: grid;
   gap: 0.45rem;
+}
+
+.composer.is-hidden {
+  display: none;
 }
 
 .format-toolbar {
@@ -557,6 +595,7 @@ textarea {
 .editor:focus-visible,
 .task-toggle:focus-visible,
 .task-delete:focus-visible,
+.panel-view-button:focus-visible,
 .template-toggle:focus-visible,
 .task-filter-select:focus-visible,
 .template-option:focus-visible,
@@ -622,11 +661,12 @@ textarea {
   }
 
   .panel-header {
-    justify-content: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   .task-filter-controls {
-    width: 100%;
+    width: auto;
     justify-content: flex-end;
   }
 
