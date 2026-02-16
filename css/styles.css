@@ -365,7 +365,8 @@ textarea {
 }
 
 .composer.is-hidden {
-  display: none;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .format-toolbar {
