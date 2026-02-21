@@ -221,11 +221,11 @@ textarea {
 }
 
 .task-list::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .task-list::-webkit-scrollbar-thumb {
-  background: rgba(198, 118, 72, 0.55);
+  background: rgba(198, 118, 72, 0.45);
   border-radius: 4px;
 }
 
@@ -252,6 +252,7 @@ textarea {
 
 .task-item {
   position: relative;
+  flex-shrink: 0;
   overflow: hidden;
   border-radius: 8px;
   border: 1px solid rgba(196, 116, 70, 0.28);
