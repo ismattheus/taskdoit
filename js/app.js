@@ -562,7 +562,7 @@ function initApp() {
 
     const { html } = getEditorContent(editorEl);
     const task = createTask(html, state.composerTemplate);
-    state.tasks.unshift(task);
+    state.tasks.push(task);
     saveState(state);
 
     renderApp();
