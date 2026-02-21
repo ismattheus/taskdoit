@@ -485,6 +485,7 @@ function initApp() {
   let dueDateMenuOpen = false;
   let dueDateMonthMenuOpen = false;
   let dueDateYearMenuOpen = false;
+  let dueDatePickerPointerActive = false;
   let dueDateViewDate = new Date();
   dueDateViewDate.setDate(1);
   let placementRafId = 0;
@@ -1127,9 +1128,20 @@ function initApp() {
     setDueDateMenuOpen(true);
   }
 
+  function handleDueDatePickerPointerStart() {
+    dueDatePickerPointerActive = true;
+  }
+
+  function handleDueDatePickerPointerEnd() {
+    dueDatePickerPointerActive = false;
+  }
+
   function handleDueDateInputBlur(event) {
     const nextFocusedEl = event.relatedTarget;
-    if (nextFocusedEl && dueDatePickerEl.contains(nextFocusedEl)) {
+    if (
+      (nextFocusedEl && dueDatePickerEl.contains(nextFocusedEl)) ||
+      dueDatePickerPointerActive
+    ) {
       return;
     }
     commitDueDateInputValue(dueDateInputEl.value);
@@ -1400,6 +1412,8 @@ function initApp() {
   filterToggleEl.addEventListener("click", handleFilterToggleClick);
   filterMenuEl.addEventListener("click", handleFilterMenuAction);
   dueDateToggleEl.addEventListener("click", handleDueDateToggleClick);
+  dueDatePickerEl.addEventListener("pointerdown", handleDueDatePickerPointerStart, true);
+  dueDatePickerEl.addEventListener("mousedown", handleDueDatePickerPointerStart, true);
   dueDateInputEl.addEventListener("focus", handleDueDateInputFocus);
   dueDateInputEl.addEventListener("blur", handleDueDateInputBlur);
   dueDateInputEl.addEventListener("keydown", handleDueDateInputKeydown);
@@ -1410,6 +1424,10 @@ function initApp() {
   templateAddInputEl.addEventListener("keydown", handleTemplateAddInputKeydown);
   document.addEventListener("pointerdown", handleHeaderDropdownOutsidePointerDown);
   document.addEventListener("keydown", handleHeaderDropdownKeydown);
+  window.addEventListener("pointerup", handleDueDatePickerPointerEnd, true);
+  window.addEventListener("pointercancel", handleDueDatePickerPointerEnd, true);
+  window.addEventListener("mouseup", handleDueDatePickerPointerEnd, true);
+  window.addEventListener("blur", handleDueDatePickerPointerEnd);
   window.addEventListener("resize", handleViewportResize);
   window.addEventListener("scroll", handleDocumentScroll, true);
 }
