@@ -542,6 +542,12 @@ textarea {
   opacity: 0.92;
 }
 
+.task-item.is-complete.is-no-due-date .task-item-completed-date {
+  border-color: rgba(190, 110, 66, 0.34);
+  background: #fff3e8;
+  color: #8f4f33;
+}
+
 .task-item.is-complete.is-on-time .task-item-completed-date {
   border-color: rgba(84, 134, 104, 0.34);
   background: #eef8f1;

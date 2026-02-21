@@ -172,6 +172,9 @@ function createTaskElement(task) {
 
   const dueDateLabel = formatDueDateForLabel(task.dueDate);
   const completedDateLabel = task.completed ? formatCompletedDateForLabel(task.completedAt) : "";
+  if (completedDateLabel && !dueDateLabel) {
+    article.classList.add("is-no-due-date");
+  }
   if (dueDateLabel || completedDateLabel) {
     body.classList.add("has-meta");
     const meta = document.createElement("div");
