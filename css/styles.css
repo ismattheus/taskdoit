@@ -158,7 +158,7 @@ textarea {
   border-radius: 6px;
   background: #fffaf5;
   color: var(--text-main);
-  height: 1.82rem;
+  height: var(--dropdown-control-height);
   padding: 0 0.58rem;
   font-size: 0.77rem;
   font-weight: 600;
