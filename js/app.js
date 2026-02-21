@@ -377,10 +377,10 @@ function initApp() {
     const optionRowGap = parseFloat(optionStyles.rowGap || optionStyles.gap || "0") || 0;
     const firstRow = templateOptionsEl.querySelector(".template-option-row");
     const rowHeight = firstRow ? firstRow.getBoundingClientRect().height : 30;
-    const maxVisibleRows = 6;
-    const sixRowCap =
+    const maxVisibleRows = 5;
+    const visibleRowCap =
       rowHeight * maxVisibleRows + optionRowGap * Math.max(0, maxVisibleRows - 1);
-    const nextMaxHeight = Math.max(56, Math.floor(Math.min(availableHeight, sixRowCap)));
+    const nextMaxHeight = Math.max(52, Math.floor(Math.min(availableHeight, visibleRowCap)));
 
     templateOptionsEl.style.maxHeight = `${nextMaxHeight}px`;
   }
@@ -480,7 +480,7 @@ function initApp() {
 
     const firstRow = rows[0];
     const rowHeight = firstRow.getBoundingClientRect().height || 30;
-    const maxVisibleRows = 6;
+    const maxVisibleRows = 5;
     const visibleRows = Math.min(maxVisibleRows, rowCount);
     const nextMaxHeight =
       rowHeight * visibleRows + optionRowGap * Math.max(0, visibleRows - 1);

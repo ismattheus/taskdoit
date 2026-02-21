@@ -1,6 +1,15 @@
 :root {
   --panel-width: min(880px, 100%);
-  --template-control-width: min(248px, 76vw);
+  --dropdown-control-width: min(248px, 76vw);
+  --template-control-width: var(--dropdown-control-width);
+  --dropdown-control-height: 1.64rem;
+  --dropdown-control-font-size: 0.77rem;
+  --dropdown-control-padding-x: 0.56rem;
+  --dropdown-menu-padding: 0.32rem;
+  --dropdown-menu-gap: 0.22rem;
+  --dropdown-menu-max-height: min(252px, 58vh);
+  --dropdown-options-max-height: min(152px, 34vh);
+  --dropdown-option-font-size: 0.76rem;
   --bg-base: #fff2e8;
   --bg-layer: #ffe9d8;
   --panel-bg: rgba(255, 248, 240, 0.9);
@@ -179,19 +188,22 @@ textarea {
 
 .task-filter-picker {
   position: relative;
+  width: var(--dropdown-control-width);
+  min-width: var(--dropdown-control-width);
+  flex: 0 0 var(--dropdown-control-width);
 }
 
 .task-filter-toggle {
   appearance: none;
   -webkit-appearance: none;
+  width: 100%;
   border: 1px solid rgba(190, 110, 66, 0.42);
   border-radius: 6px;
   background: #fffaf5;
   color: var(--text-main);
-  height: 1.82rem;
-  min-width: clamp(120px, 18vw, 188px);
-  padding: 0 0.56rem;
-  font-size: 0.79rem;
+  height: var(--dropdown-control-height);
+  padding: 0 var(--dropdown-control-padding-x);
+  font-size: var(--dropdown-control-font-size);
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -238,16 +250,16 @@ textarea {
   position: absolute;
   top: calc(100% + 0.32rem);
   right: 0;
-  width: min(248px, 76vw);
+  width: var(--dropdown-control-width);
   border: 1px solid rgba(190, 110, 66, 0.42);
   border-radius: 8px;
   background: #fff8f0;
   box-shadow: var(--shadow-md);
-  padding: 0.4rem;
+  padding: var(--dropdown-menu-padding);
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
-  max-height: min(300px, 66vh);
+  gap: var(--dropdown-menu-gap);
+  max-height: var(--dropdown-menu-max-height);
   overflow: hidden;
   z-index: 20;
 }
@@ -515,13 +527,13 @@ textarea {
   appearance: none;
   -webkit-appearance: none;
   width: 100%;
-  height: 1.84rem;
+  height: var(--dropdown-control-height);
   border: 1px solid rgba(190, 110, 66, 0.42);
   border-radius: 6px;
   background: #fffaf5;
   color: var(--text-main);
-  padding: 0 0.56rem;
-  font-size: 0.79rem;
+  padding: 0 var(--dropdown-control-padding-x);
+  font-size: var(--dropdown-control-font-size);
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -552,11 +564,11 @@ textarea {
   border-radius: 8px;
   background: #fff8f0;
   box-shadow: var(--shadow-md);
-  padding: 0.4rem;
+  padding: var(--dropdown-menu-padding);
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
-  max-height: min(300px, 66vh);
+  gap: var(--dropdown-menu-gap);
+  max-height: var(--dropdown-menu-max-height);
   overflow: hidden;
   z-index: 20;
 }
@@ -595,7 +607,7 @@ textarea {
   gap: 0.2rem;
   flex: 0 1 auto;
   min-height: 0;
-  max-height: min(188px, 42vh);
+  max-height: var(--dropdown-options-max-height);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -628,7 +640,7 @@ textarea {
   background: transparent;
   color: var(--text-main);
   text-align: left;
-  font-size: 0.78rem;
+  font-size: var(--dropdown-option-font-size);
   line-height: 1.25;
   cursor: pointer;
 }
@@ -637,13 +649,13 @@ textarea {
   border: 1px solid rgba(190, 110, 66, 0.26);
   border-radius: 6px;
   background: #fffaf5;
-  padding: 0.36rem 0.44rem;
+  padding: 0.31rem 0.4rem;
 }
 
 .template-option-main {
   flex: 1;
   min-width: 0;
-  padding: 0.34rem 0.42rem;
+  padding: 0.28rem 0.4rem;
 }
 
 .template-option-main:hover,
