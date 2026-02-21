@@ -83,21 +83,7 @@
         </section>
 
         <section class="composer" aria-label="Task Composer">
-          <div class="format-toolbar" role="toolbar" aria-label="Text formatting">
-            <button type="button" class="format-button" data-format="bold" aria-label="Bold">
-              <strong>B</strong>
-            </button>
-            <button type="button" class="format-button" data-format="italic" aria-label="Italic">
-              <em>I</em>
-            </button>
-            <button
-              type="button"
-              class="format-button"
-              data-format="underline"
-              aria-label="Underline"
-            >
-              <span class="underline-mark">U</span>
-            </button>
+          <div class="format-toolbar" role="group" aria-label="Task controls">
             <div id="template-picker" class="template-picker">
               <button
                 id="template-toggle"
@@ -144,6 +130,108 @@
                     aria-label="New template name"
                   />
                 </form>
+              </div>
+            </div>
+            <div id="due-date-picker" class="due-date-picker">
+              <div class="due-date-field">
+                <input
+                  id="due-date-input"
+                  class="due-date-input"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  placeholder="Due date"
+                  aria-label="Set due date in DD/MM/YYYY format"
+                />
+                <button
+                  id="due-date-toggle"
+                  type="button"
+                  class="due-date-toggle"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                  aria-label="Open due date calendar"
+                >
+                  <svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+                    <path
+                      d="M6 1.5a.8.8 0 0 1 .8.8v.9h6.4v-.9a.8.8 0 0 1 1.6 0v.9h.7A2.5 2.5 0 0 1 18 5.7v9.8A2.5 2.5 0 0 1 15.5 18h-11A2.5 2.5 0 0 1 2 15.5V5.7A2.5 2.5 0 0 1 4.5 3.2h.7v-.9a.8.8 0 0 1 .8-.8zm10.4 6.2H3.6v7.8c0 .5.4.9.9.9h11c.5 0 .9-.4.9-.9V7.7zm-.9-2.9h-11c-.5 0-.9.4-.9.9v.4h12.8v-.4c0-.5-.4-.9-.9-.9z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div id="due-date-menu" class="due-date-menu" role="dialog" aria-label="Due date calendar" hidden>
+                <div class="due-date-header">
+                  <button
+                    type="button"
+                    class="due-date-nav"
+                    data-action="due-date-prev-month"
+                    aria-label="Go to previous month"
+                  >
+                    ◂
+                  </button>
+                  <div class="due-date-select-wrap">
+                    <button
+                      id="due-date-month-toggle"
+                      type="button"
+                      class="due-date-select-toggle"
+                      data-action="due-date-toggle-month-menu"
+                      aria-haspopup="listbox"
+                      aria-expanded="false"
+                      aria-label="Select month"
+                    >
+                      <span id="due-date-month-label">Month</span>
+                      <span class="due-date-select-caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div
+                      id="due-date-month-menu"
+                      class="due-date-select-menu"
+                      role="listbox"
+                      aria-label="Month options"
+                      hidden
+                    ></div>
+                  </div>
+                  <div class="due-date-select-wrap">
+                    <button
+                      id="due-date-year-toggle"
+                      type="button"
+                      class="due-date-select-toggle"
+                      data-action="due-date-toggle-year-menu"
+                      aria-haspopup="listbox"
+                      aria-expanded="false"
+                      aria-label="Select year"
+                    >
+                      <span id="due-date-year-label">Year</span>
+                      <span class="due-date-select-caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div
+                      id="due-date-year-menu"
+                      class="due-date-select-menu due-date-select-menu-years"
+                      role="listbox"
+                      aria-label="Year options"
+                      hidden
+                    ></div>
+                  </div>
+                  <button
+                    type="button"
+                    class="due-date-nav"
+                    data-action="due-date-next-month"
+                    aria-label="Go to next month"
+                  >
+                    ▸
+                  </button>
+                </div>
+                <div class="due-date-weekdays" aria-hidden="true">
+                  <span>Mo</span>
+                  <span>Tu</span>
+                  <span>We</span>
+                  <span>Th</span>
+                  <span>Fr</span>
+                  <span>Sa</span>
+                  <span>Su</span>
+                </div>
+                <div id="due-date-grid" class="due-date-grid"></div>
+                <div class="due-date-footer">
+                  <button type="button" class="due-date-footer-button" data-action="due-date-today">Today</button>
+                </div>
               </div>
             </div>
           </div>
