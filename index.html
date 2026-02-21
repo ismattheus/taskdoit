@@ -34,18 +34,45 @@
             </button>
           </div>
           <div class="task-filter-controls">
-            <label for="task-filter" class="task-filter-label">
-              <span class="task-filter-icon" aria-hidden="true">
-                <svg viewBox="0 0 20 20" focusable="false">
-                  <path
-                    d="M2.5 4.5a1 1 0 0 1 1-1h13a1 1 0 0 1 .77 1.64L12 11.6v3.9a1 1 0 0 1-.45.83l-2 1.3A1 1 0 0 1 8 16.8v-5.2L2.73 5.14a1 1 0 0 1-.23-.64z"
-                  />
-                </svg>
-              </span>
-              <span>Filter</span>
-            </label>
-            <select id="task-filter" class="task-filter-select" aria-label="Filter tasks by template">
-            </select>
+            <span class="task-filter-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" focusable="false">
+                <path
+                  d="M2.5 4.5a1 1 0 0 1 1-1h13a1 1 0 0 1 .77 1.64L12 11.6v3.9a1 1 0 0 1-.45.83l-2 1.3A1 1 0 0 1 8 16.8v-5.2L2.73 5.14a1 1 0 0 1-.23-.64z"
+                />
+              </svg>
+            </span>
+            <div id="task-filter-picker" class="task-filter-picker">
+              <button
+                id="task-filter-toggle"
+                type="button"
+                class="task-filter-toggle"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-label="Filter tasks by template"
+              >
+                <span id="task-filter-toggle-label" class="task-filter-toggle-label">All</span>
+                <span id="task-filter-toggle-caret" class="task-filter-toggle-caret" aria-hidden="true">▾</span>
+              </button>
+              <div id="task-filter-menu" class="task-filter-menu" role="listbox" hidden>
+                <button
+                  type="button"
+                  class="template-option template-option-clear"
+                  data-action="select-filter"
+                  data-filter-value="__all__"
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  class="template-option template-option-clear"
+                  data-action="select-filter"
+                  data-filter-value="__none__"
+                >
+                  No template
+                </button>
+                <div id="task-filter-options" class="template-options task-filter-options"></div>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -81,7 +108,7 @@
                 aria-label="Choose template"
               >
                 <span id="template-toggle-label">No template</span>
-                <span class="template-toggle-caret" aria-hidden="true">▴</span>
+                <span id="template-toggle-caret" class="template-toggle-caret" aria-hidden="true">▴</span>
               </button>
               <div id="template-menu" class="template-menu" role="listbox" hidden>
                 <button

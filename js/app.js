@@ -178,14 +178,7 @@ function loadState() {
       tasks,
       templates,
       composerTemplate: null,
-      activeFilter: resolveActiveFilter(
-        isLegacyData &&
-          getTemplateKey(sanitizeTemplateName(parsed.activeFilter || "")) ===
-            getTemplateKey(LEGACY_AUTO_TEMPLATE)
-          ? FILTER_MODE_ALL
-          : parsed.activeFilter,
-        templates
-      ),
+      activeFilter: FILTER_MODE_ALL,
       activeView: resolveActiveView(parsed.activeView),
     };
   } catch {
@@ -208,31 +201,6 @@ function saveState(state) {
   } catch {
     // Ignore persistence failures so the app remains usable.
   }
-}
-
-function fillFilterSelect(selectEl, templates, activeFilter) {
-  selectEl.innerHTML = "";
-  const fragment = document.createDocumentFragment();
-
-  const allOption = document.createElement("option");
-  allOption.value = FILTER_VALUE_ALL;
-  allOption.textContent = "All";
-  fragment.append(allOption);
-
-  const noneOption = document.createElement("option");
-  noneOption.value = FILTER_VALUE_NONE;
-  noneOption.textContent = "No template";
-  fragment.append(noneOption);
-
-  templates.forEach((templateName) => {
-    const option = document.createElement("option");
-    option.value = `${FILTER_VALUE_TEMPLATE_PREFIX}${templateName}`;
-    option.textContent = templateName;
-    fragment.append(option);
-  });
-
-  selectEl.append(fragment);
-  selectEl.value = toFilterValue(resolveActiveFilter(activeFilter, templates));
 }
 
 function getTasksForActiveView(state) {
@@ -329,29 +297,45 @@ function initApp() {
   const editorEl = document.getElementById("editor");
   const composerEl = document.querySelector(".composer");
   const toolbarEl = document.querySelector(".format-toolbar");
-  const filterSelectEl = document.getElementById("task-filter");
+  const filterPickerEl = document.getElementById("task-filter-picker");
+  const filterToggleEl = document.getElementById("task-filter-toggle");
+  const filterToggleLabelEl = document.getElementById("task-filter-toggle-label");
+  const filterToggleCaretEl = document.getElementById("task-filter-toggle-caret");
+  const filterMenuEl = document.getElementById("task-filter-menu");
+  const filterOptionsEl = document.getElementById("task-filter-options");
   const completedTabToggleEl = document.getElementById("completed-tab-toggle");
 
   const templatePickerEl = document.getElementById("template-picker");
   const templateToggleEl = document.getElementById("template-toggle");
   const templateToggleLabelEl = document.getElementById("template-toggle-label");
+  const templateToggleCaretEl = document.getElementById("template-toggle-caret");
   const templateMenuEl = document.getElementById("template-menu");
   const templateOptionsEl = document.getElementById("template-options");
   const templateAddTriggerEl = document.getElementById("template-add-trigger");
   const templateAddFormEl = document.getElementById("template-add-form");
   const templateAddInputEl = document.getElementById("template-add-input");
   const templateClearOptionEl = templateMenuEl?.querySelector(".template-option-clear");
+  const filterAllOptionEl = filterMenuEl?.querySelector(`[data-filter-value="${FILTER_VALUE_ALL}"]`);
+  const filterNoneOptionEl = filterMenuEl?.querySelector(`[data-filter-value="${FILTER_VALUE_NONE}"]`);
 
   if (
     !taskListEl ||
     !editorEl ||
     !composerEl ||
     !toolbarEl ||
-    !filterSelectEl ||
+    !filterPickerEl ||
+    !filterToggleEl ||
+    !filterToggleLabelEl ||
+    !filterToggleCaretEl ||
+    !filterMenuEl ||
+    !filterOptionsEl ||
+    !filterAllOptionEl ||
+    !filterNoneOptionEl ||
     !completedTabToggleEl ||
     !templatePickerEl ||
     !templateToggleEl ||
     !templateToggleLabelEl ||
+    !templateToggleCaretEl ||
     !templateMenuEl ||
     !templateOptionsEl ||
     !templateAddTriggerEl ||
@@ -364,6 +348,7 @@ function initApp() {
 
   const state = loadState();
   let templateMenuOpen = false;
+  let filterMenuOpen = false;
   let placementRafId = 0;
   const pendingCompletionTimers = new Map();
   saveState(state);
@@ -465,6 +450,7 @@ function initApp() {
     templateMenuOpen = isOpen;
     templateMenuEl.hidden = !isOpen;
     templateToggleEl.setAttribute("aria-expanded", String(isOpen));
+    templateToggleCaretEl.textContent = isOpen ? "▾" : "▴";
     if (isOpen) {
       scheduleTemplateMenuPlacement();
     } else {
@@ -475,6 +461,78 @@ function initApp() {
         placementRafId = 0;
       }
     }
+  }
+
+  function updateFilterOptionsScrollArea() {
+    if (filterOptionsEl.hidden) {
+      filterOptionsEl.style.maxHeight = "";
+      return;
+    }
+
+    const optionStyles = window.getComputedStyle(filterOptionsEl);
+    const optionRowGap = parseFloat(optionStyles.rowGap || optionStyles.gap || "0") || 0;
+    const rows = filterOptionsEl.querySelectorAll(".template-option-row");
+    const rowCount = rows.length;
+    if (rowCount === 0) {
+      filterOptionsEl.style.maxHeight = "";
+      return;
+    }
+
+    const firstRow = rows[0];
+    const rowHeight = firstRow.getBoundingClientRect().height || 30;
+    const maxVisibleRows = 6;
+    const visibleRows = Math.min(maxVisibleRows, rowCount);
+    const nextMaxHeight =
+      rowHeight * visibleRows + optionRowGap * Math.max(0, visibleRows - 1);
+    filterOptionsEl.style.maxHeight = `${Math.floor(nextMaxHeight)}px`;
+  }
+
+  function setFilterMenuOpen(isOpen) {
+    filterMenuOpen = isOpen;
+    filterMenuEl.hidden = !isOpen;
+    filterToggleEl.setAttribute("aria-expanded", String(isOpen));
+    filterToggleCaretEl.textContent = isOpen ? "▴" : "▾";
+  }
+
+  function renderFilterDropdown() {
+    const resolvedActiveFilter = resolveActiveFilter(state.activeFilter, state.templates);
+    const activeFilterValue = toFilterValue(resolvedActiveFilter);
+
+    filterAllOptionEl.classList.toggle("is-selected", activeFilterValue === FILTER_VALUE_ALL);
+    filterNoneOptionEl.classList.toggle("is-selected", activeFilterValue === FILTER_VALUE_NONE);
+
+    filterOptionsEl.innerHTML = "";
+    const fragment = document.createDocumentFragment();
+    state.templates.forEach((templateName) => {
+      const row = document.createElement("div");
+      row.className = "template-option-row";
+
+      const optionButton = document.createElement("button");
+      optionButton.type = "button";
+      optionButton.className = "template-option template-option-main";
+      optionButton.dataset.action = "select-filter";
+      optionButton.dataset.filterValue = `${FILTER_VALUE_TEMPLATE_PREFIX}${templateName}`;
+      optionButton.textContent = templateName;
+      if (activeFilterValue === optionButton.dataset.filterValue) {
+        optionButton.classList.add("is-selected");
+      }
+
+      row.append(optionButton);
+      fragment.append(row);
+    });
+
+    filterOptionsEl.append(fragment);
+    filterOptionsEl.hidden = state.templates.length === 0;
+    updateFilterOptionsScrollArea();
+
+    const currentLabel =
+      resolvedActiveFilter === FILTER_MODE_ALL
+        ? "All"
+        : resolvedActiveFilter === FILTER_MODE_NONE
+          ? "No template"
+          : resolvedActiveFilter;
+    filterToggleLabelEl.textContent = currentLabel;
+    filterToggleEl.setAttribute("aria-label", `Filter tasks by template. Current: ${currentLabel}`);
   }
 
   function showTemplateInput() {
@@ -543,7 +601,7 @@ function initApp() {
     }
 
     renderTemplateDropdown();
-    fillFilterSelect(filterSelectEl, state.templates, state.activeFilter);
+    renderFilterDropdown();
 
     const visibleTasks = getVisibleTasks(state);
     const emptyState = getEmptyState(state, visibleTasks);
@@ -665,11 +723,25 @@ function initApp() {
     }
   }
 
-  function handleFilterChange(event) {
-    const selectedFilter = fromFilterValue(event.target.value, state.templates);
+  function handleFilterMenuAction(event) {
+    const actionEl = event.target.closest("[data-action='select-filter']");
+    if (!actionEl) {
+      return;
+    }
+
+    const selectedFilter = fromFilterValue(actionEl.dataset.filterValue || FILTER_VALUE_ALL, state.templates);
     state.activeFilter = selectedFilter;
     saveState(state);
     renderApp();
+    setFilterMenuOpen(false);
+    filterToggleEl.focus();
+  }
+
+  function handleFilterToggleClick() {
+    if (templateMenuOpen) {
+      setTemplateMenuOpen(false);
+    }
+    setFilterMenuOpen(!filterMenuOpen);
   }
 
   function handleCompletedTabToggle() {
@@ -736,27 +808,30 @@ function initApp() {
   }
 
   function handleTemplateToggleClick() {
+    if (filterMenuOpen) {
+      setFilterMenuOpen(false);
+    }
     setTemplateMenuOpen(!templateMenuOpen);
   }
 
-  function handleTemplatePickerOutsidePointerDown(event) {
-    if (!templateMenuOpen) {
-      return;
+  function handleHeaderDropdownOutsidePointerDown(event) {
+    if (templateMenuOpen && !templatePickerEl.contains(event.target)) {
+      setTemplateMenuOpen(false);
     }
 
-    if (templatePickerEl.contains(event.target)) {
-      return;
+    if (filterMenuOpen && !filterPickerEl.contains(event.target)) {
+      setFilterMenuOpen(false);
     }
-
-    setTemplateMenuOpen(false);
   }
 
   function handleViewportResize() {
-    if (!templateMenuOpen) {
-      return;
+    if (templateMenuOpen) {
+      scheduleTemplateMenuPlacement();
     }
 
-    scheduleTemplateMenuPlacement();
+    if (filterMenuOpen) {
+      updateFilterOptionsScrollArea();
+    }
   }
 
   function handleDocumentScroll(event) {
@@ -771,15 +846,22 @@ function initApp() {
     scheduleTemplateMenuPlacement();
   }
 
-  function handleTemplatePickerKeydown(event) {
-    if (!templateMenuOpen) {
+  function handleHeaderDropdownKeydown(event) {
+    if (event.key !== "Escape") {
       return;
     }
 
-    if (event.key === "Escape") {
+    if (templateMenuOpen) {
       event.preventDefault();
       setTemplateMenuOpen(false);
       templateToggleEl.focus();
+      return;
+    }
+
+    if (filterMenuOpen) {
+      event.preventDefault();
+      setFilterMenuOpen(false);
+      filterToggleEl.focus();
     }
   }
 
@@ -802,13 +884,14 @@ function initApp() {
   editorEl.addEventListener("keydown", handleEditorKeydown);
   taskListEl.addEventListener("click", handleTaskActionClick);
   completedTabToggleEl.addEventListener("click", handleCompletedTabToggle);
-  filterSelectEl.addEventListener("change", handleFilterChange);
+  filterToggleEl.addEventListener("click", handleFilterToggleClick);
+  filterMenuEl.addEventListener("click", handleFilterMenuAction);
   templateToggleEl.addEventListener("click", handleTemplateToggleClick);
   templateMenuEl.addEventListener("click", handleTemplateMenuAction);
   templateAddFormEl.addEventListener("submit", handleTemplateAddSubmit);
   templateAddInputEl.addEventListener("keydown", handleTemplateAddInputKeydown);
-  document.addEventListener("pointerdown", handleTemplatePickerOutsidePointerDown);
-  document.addEventListener("keydown", handleTemplatePickerKeydown);
+  document.addEventListener("pointerdown", handleHeaderDropdownOutsidePointerDown);
+  document.addEventListener("keydown", handleHeaderDropdownKeydown);
   window.addEventListener("resize", handleViewportResize);
   window.addEventListener("scroll", handleDocumentScroll, true);
 }
