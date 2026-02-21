@@ -59,10 +59,6 @@ function getTextFromHTML(html) {
   return (temp.textContent || "").replace(/\u00a0/g, " ").trim();
 }
 
-function runFormatCommand(command) {
-  document.execCommand(command, false);
-}
-
 function moveCaretToStart(editorEl) {
   const selection = window.getSelection();
   if (!selection) {
@@ -81,35 +77,10 @@ function syncEmptyState(editorEl) {
   editorEl.dataset.empty = plainText.length === 0 ? "true" : "false";
 }
 
-export function initEditor(editorEl, toolbarEl) {
-  if (!editorEl || !toolbarEl) {
-    throw new Error("Editor and toolbar elements are required.");
+export function initEditor(editorEl) {
+  if (!editorEl) {
+    throw new Error("Editor element is required.");
   }
-
-  // Keep text selection in the editor when clicking toolbar buttons (Safari/Chromium parity).
-  toolbarEl.addEventListener("mousedown", (event) => {
-    const button = event.target.closest("[data-format]");
-    if (!button) {
-      return;
-    }
-    event.preventDefault();
-  });
-
-  toolbarEl.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-format]");
-    if (!button) {
-      return;
-    }
-
-    const command = button.dataset.format;
-    if (!command) {
-      return;
-    }
-
-    editorEl.focus();
-    runFormatCommand(command);
-    syncEmptyState(editorEl);
-  });
 
   editorEl.addEventListener("input", () => {
     syncEmptyState(editorEl);

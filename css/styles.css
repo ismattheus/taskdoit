@@ -10,6 +10,7 @@
   --dropdown-menu-max-height: min(252px, 58vh);
   --dropdown-options-max-height: min(152px, 34vh);
   --dropdown-option-font-size: 0.76rem;
+  --due-date-control-width: 11.4rem;
   --bg-base: #fff2e8;
   --bg-layer: #ffe9d8;
   --panel-bg: rgba(255, 248, 240, 0.9);
@@ -350,6 +351,17 @@ textarea {
   box-shadow: 0 10px 20px rgba(106, 49, 20, 0.16);
 }
 
+.task-item.is-overdue {
+  border-color: rgba(186, 84, 65, 0.52);
+  background: #ffe3da;
+}
+
+.task-item.is-overdue:hover,
+.task-item.is-overdue:focus-within {
+  border-color: rgba(186, 84, 65, 0.68);
+  background: #ffd8cc;
+}
+
 .task-item.is-completing {
   pointer-events: none;
 }
@@ -382,6 +394,30 @@ textarea {
   gap: 0.45rem;
   position: relative;
   z-index: 1;
+}
+
+.task-item-body {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.task-item-body.has-meta {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 0.34rem;
+}
+
+.task-item-body.has-meta .task-item-content {
+  grid-column: 1;
+}
+
+.task-item-meta {
+  grid-column: 2;
+  display: grid;
+  gap: 0.16rem;
+  justify-items: flex-end;
+  align-content: start;
 }
 
 .task-toggle {
@@ -463,8 +499,61 @@ textarea {
   margin-top: 0.14rem;
 }
 
+.task-item-date-badge {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 17ch;
+  min-height: 1.34rem;
+  border: 1px solid rgba(190, 110, 66, 0.34);
+  border-radius: 999px;
+  padding: 0.12rem 0.56rem;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.task-item-due-date {
+  background: #fff3e8;
+  color: #8f4f33;
+}
+
+.task-item-completed-date {
+  border: 1px solid rgba(84, 134, 104, 0.34);
+  background: #eef8f1;
+  color: #3f6e52;
+}
+
 .task-item.is-complete .task-item-content {
   color: #8b664f;
+  text-align: left;
+}
+
+.task-item.is-complete .task-item-body.has-meta {
+  align-items: center;
+}
+
+.task-item.is-complete .task-item-due-date {
+  opacity: 1;
+}
+
+.task-item.is-complete .task-item-completed-date {
+  opacity: 0.92;
+}
+
+.task-item.is-complete.is-on-time .task-item-completed-date {
+  border-color: rgba(84, 134, 104, 0.34);
+  background: #eef8f1;
+  color: #3f6e52;
+  opacity: 0.92;
+}
+
+.task-item.is-complete.is-late .task-item-completed-date {
+  border-color: rgba(186, 84, 65, 0.34);
+  background: #fff1ec;
+  color: #9b4a3a;
+  opacity: 0.92;
 }
 
 .task-item.is-complete .task-item-content,
@@ -494,25 +583,6 @@ textarea {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.34rem;
-}
-
-.format-button {
-  width: 1.84rem;
-  height: 1.84rem;
-  appearance: none;
-  -webkit-appearance: none;
-  border: 1px solid rgba(190, 110, 66, 0.42);
-  border-radius: 6px;
-  background: #fffaf5;
-  color: var(--text-main);
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
-}
-
-.format-button:hover {
-  transform: translateY(-1px);
-  background: var(--accent-soft);
-  border-color: rgba(206, 109, 57, 0.65);
 }
 
 .template-picker {
@@ -723,7 +793,311 @@ textarea {
   font-size: 0.78rem;
 }
 
-.format-button:focus-visible,
+.due-date-picker {
+  position: relative;
+  order: -1;
+  margin-left: auto;
+  width: var(--due-date-control-width);
+  min-width: var(--due-date-control-width);
+  flex: 0 0 var(--due-date-control-width);
+}
+
+.due-date-field {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+  height: var(--dropdown-control-height);
+  border: 1px solid rgba(190, 110, 66, 0.42);
+  border-radius: 6px;
+  background: #fffaf5;
+  padding: 0 0.34rem 0 0.44rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.due-date-field:focus-within {
+  background: #fffdf9;
+  border-color: rgba(206, 109, 57, 0.65);
+}
+
+.due-date-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: var(--dropdown-control-font-size);
+  line-height: 1;
+}
+
+.due-date-input::placeholder {
+  color: #a07056;
+}
+
+.due-date-input:focus {
+  outline: none;
+}
+
+.due-date-input[aria-invalid="true"] {
+  color: #aa3f1f;
+}
+
+.due-date-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #9a5b3f;
+  width: 1.34rem;
+  height: 1.34rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.due-date-toggle svg {
+  width: 0.94rem;
+  height: 0.94rem;
+  fill: currentColor;
+}
+
+.due-date-toggle:hover {
+  background: var(--accent-soft);
+  color: #8f4a2f;
+}
+
+.due-date-menu {
+  position: absolute;
+  top: auto;
+  bottom: calc(100% + 0.32rem);
+  right: 0;
+  left: auto;
+  width: max(var(--due-date-control-width), 16rem);
+  border: 1px solid rgba(190, 110, 66, 0.42);
+  border-radius: 8px;
+  background: #fff8f0;
+  box-shadow: var(--shadow-md);
+  padding: var(--dropdown-menu-padding);
+  display: grid;
+  gap: var(--dropdown-menu-gap);
+  max-height: var(--dropdown-menu-max-height);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.due-date-menu[hidden] {
+  display: none;
+}
+
+.due-date-header {
+  display: grid;
+  grid-template-columns: 1.56rem 1fr 1fr 1.56rem;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.due-date-select-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.due-date-select-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: var(--dropdown-control-height);
+  border: 1px solid rgba(190, 110, 66, 0.42);
+  border-radius: 6px;
+  background: #fffaf5;
+  color: var(--text-main);
+  padding: 0 var(--dropdown-control-padding-x);
+  font-size: var(--dropdown-control-font-size);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.due-date-select-toggle:hover {
+  transform: translateY(-1px);
+  background: var(--accent-soft);
+  border-color: rgba(206, 109, 57, 0.65);
+}
+
+.due-date-select-caret {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.due-date-select-menu {
+  position: absolute;
+  top: calc(100% + 0.18rem);
+  left: 0;
+  right: 0;
+  border: 1px solid rgba(190, 110, 66, 0.42);
+  border-radius: 8px;
+  background: #fff8f0;
+  box-shadow: var(--shadow-md);
+  padding: var(--dropdown-menu-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dropdown-menu-gap);
+  max-height: min(142px, 25vh);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  z-index: 30;
+}
+
+.due-date-select-menu[hidden] {
+  display: none;
+}
+
+.due-date-select-menu-years {
+  max-height: min(176px, 32vh);
+}
+
+.due-date-select-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.due-date-select-menu::-webkit-scrollbar-thumb {
+  background: rgba(198, 118, 72, 0.45);
+  border-radius: 4px;
+}
+
+.due-date-select-option {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(190, 110, 66, 0.26);
+  border-radius: 6px;
+  background: #fffaf5;
+  color: var(--text-main);
+  text-align: left;
+  font-size: var(--dropdown-option-font-size);
+  line-height: 1.25;
+  padding: 0.31rem 0.4rem;
+  cursor: pointer;
+}
+
+.due-date-select-option:hover {
+  background: var(--accent-soft);
+}
+
+.due-date-select-option.is-selected {
+  color: #9a4527;
+  font-weight: 700;
+}
+
+.due-date-nav {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: var(--dropdown-control-height);
+  border: 1px solid rgba(190, 110, 66, 0.42);
+  border-radius: 6px;
+  background: #fffaf5;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.due-date-nav:hover {
+  transform: translateY(-1px);
+  background: var(--accent-soft);
+  border-color: rgba(206, 109, 57, 0.65);
+}
+
+.due-date-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.14rem;
+}
+
+.due-date-weekdays span {
+  text-align: center;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.due-date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.14rem;
+}
+
+.due-date-day {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 1.4rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-main);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 0.72rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.due-date-day:hover {
+  background: var(--accent-soft);
+  border-color: rgba(206, 109, 57, 0.35);
+}
+
+.due-date-day.is-outside {
+  color: #b38a74;
+}
+
+.due-date-day.is-today {
+  border-color: rgba(194, 108, 66, 0.56);
+}
+
+.due-date-day.is-selected {
+  border-color: rgba(194, 108, 66, 0.7);
+  background: #ffe6d4;
+  color: #8a452a;
+  font-weight: 700;
+}
+
+.due-date-footer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.2rem;
+}
+
+.due-date-footer-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(190, 110, 66, 0.26);
+  border-radius: 6px;
+  background: #fffaf5;
+  color: var(--text-main);
+  min-height: 1.46rem;
+  padding: 0 0.42rem;
+  font-size: 0.72rem;
+  text-align: center;
+  width: 100%;
+  cursor: pointer;
+}
+
+.due-date-footer-button:hover {
+  background: var(--accent-soft);
+}
+
 .editor:focus-visible,
 .task-toggle:focus-visible,
 .task-delete:focus-visible,
@@ -733,17 +1107,20 @@ textarea {
 .template-option:focus-visible,
 .template-delete:focus-visible,
 .template-add-trigger:focus-visible,
-.template-add-input:focus-visible {
+.template-add-input:focus-visible,
+.due-date-input:focus-visible,
+.due-date-toggle:focus-visible,
+.due-date-nav:focus-visible,
+.due-date-select-toggle:focus-visible,
+.due-date-select-option:focus-visible,
+.due-date-day:focus-visible,
+.due-date-footer-button:focus-visible {
   outline: 2px solid rgba(227, 108, 58, 0.58);
   outline-offset: 2px;
 }
 
-.underline-mark {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-}
-
 .editor {
+  min-width: 0;
   min-height: 74px;
   max-height: 132px;
   overflow-y: auto;
@@ -807,6 +1184,10 @@ textarea {
     width: var(--template-control-width);
     min-width: var(--template-control-width);
     flex: 0 0 var(--template-control-width);
+  }
+
+  .due-date-picker {
+    margin-left: 0;
   }
 
   .composer {

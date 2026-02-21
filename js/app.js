@@ -19,6 +19,15 @@ const FILTER_VALUE_TEMPLATE_PREFIX = "__tpl__:";
 const VIEW_MODE_TASKS = "tasks";
 const VIEW_MODE_COMPLETED = "completed";
 const TASK_COMPLETE_ANIMATION_MS = 440;
+const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const LOCAL_DATE_INPUT_PATTERN = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/;
+const DUE_DATE_MONTH_NAME_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  month: "long",
+});
+const DUE_DATE_MONTH_NAMES = Array.from({ length: 12 }, (_, monthIndex) =>
+  DUE_DATE_MONTH_NAME_FORMATTER.format(new Date(2024, monthIndex, 1))
+);
+const DUE_DATE_YEAR_RANGE = 120;
 
 function sanitizeTemplateName(value) {
   if (typeof value !== "string") {
@@ -59,6 +68,102 @@ function pushUniqueTemplate(templates, candidate) {
   return cleaned;
 }
 
+function isValidDateParts(year, month, day) {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return false;
+  }
+
+  const candidate = new Date(year, month - 1, day);
+  return (
+    candidate.getFullYear() === year &&
+    candidate.getMonth() === month - 1 &&
+    candidate.getDate() === day
+  );
+}
+
+function toIsoDate(year, month, day) {
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function toIsoDateFromLocalDate(date) {
+  return toIsoDate(date.getFullYear(), date.getMonth() + 1, date.getDate());
+}
+
+function parseIsoDate(isoDate) {
+  if (typeof isoDate !== "string") {
+    return null;
+  }
+
+  const match = isoDate.trim().match(ISO_DATE_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!isValidDateParts(year, month, day)) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+function normalizeDueDate(value) {
+  const parsed = parseIsoDate(value);
+  if (!parsed) {
+    return null;
+  }
+
+  return toIsoDateFromLocalDate(parsed);
+}
+
+function parseDueDateInput(value) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) {
+    return {
+      status: "empty",
+      value: null,
+    };
+  }
+
+  const match = raw.match(LOCAL_DATE_INPUT_PATTERN);
+  if (!match) {
+    return {
+      status: "invalid",
+      value: null,
+    };
+  }
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  let year = Number(match[3]);
+  if (match[3].length === 2) {
+    year += year >= 70 ? 1900 : 2000;
+  }
+
+  if (!isValidDateParts(year, month, day)) {
+    return {
+      status: "invalid",
+      value: null,
+    };
+  }
+
+  return {
+    status: "valid",
+    value: toIsoDate(year, month, day),
+  };
+}
+
+function formatDueDateInput(isoDate) {
+  const date = parseIsoDate(isoDate);
+  if (!date) {
+    return "";
+  }
+
+  return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+}
+
 function sanitizeTask(task, templates, options = {}) {
   if (!task || typeof task !== "object") {
     return null;
@@ -80,12 +185,14 @@ function sanitizeTask(task, templates, options = {}) {
   if (template) {
     template = pushUniqueTemplate(templates, template);
   }
+  const dueDate = normalizeDueDate(task.dueDate);
   const completed = task.completed === true;
 
   return {
     id: task.id,
     contentHtml: task.contentHtml,
     template,
+    dueDate,
     createdAt: typeof task.createdAt === "string" ? task.createdAt : new Date().toISOString(),
     completed,
     completedAt: completed && typeof task.completedAt === "string" ? task.completedAt : null,
@@ -141,6 +248,7 @@ function loadState() {
     tasks: [],
     templates: [],
     composerTemplate: null,
+    composerDueDate: null,
     activeFilter: FILTER_MODE_ALL,
     activeView: VIEW_MODE_TASKS,
   };
@@ -178,6 +286,7 @@ function loadState() {
       tasks,
       templates,
       composerTemplate: null,
+      composerDueDate: null,
       activeFilter: FILTER_MODE_ALL,
       activeView: resolveActiveView(parsed.activeView),
     };
@@ -296,7 +405,6 @@ function initApp() {
   const taskListEl = document.getElementById("task-list");
   const editorEl = document.getElementById("editor");
   const composerEl = document.querySelector(".composer");
-  const toolbarEl = document.querySelector(".format-toolbar");
   const filterPickerEl = document.getElementById("task-filter-picker");
   const filterToggleEl = document.getElementById("task-filter-toggle");
   const filterToggleLabelEl = document.getElementById("task-filter-toggle-label");
@@ -315,6 +423,19 @@ function initApp() {
   const templateAddFormEl = document.getElementById("template-add-form");
   const templateAddInputEl = document.getElementById("template-add-input");
   const templateClearOptionEl = templateMenuEl?.querySelector(".template-option-clear");
+  const dueDatePickerEl = document.getElementById("due-date-picker");
+  const dueDateInputEl = document.getElementById("due-date-input");
+  const dueDateToggleEl = document.getElementById("due-date-toggle");
+  const dueDateMenuEl = document.getElementById("due-date-menu");
+  const dueDateMonthToggleEl = document.getElementById("due-date-month-toggle");
+  const dueDateMonthLabelEl = document.getElementById("due-date-month-label");
+  const dueDateMonthMenuEl = document.getElementById("due-date-month-menu");
+  const dueDateMonthToggleCaretEl = dueDateMonthToggleEl?.querySelector(".due-date-select-caret");
+  const dueDateYearToggleEl = document.getElementById("due-date-year-toggle");
+  const dueDateYearLabelEl = document.getElementById("due-date-year-label");
+  const dueDateYearMenuEl = document.getElementById("due-date-year-menu");
+  const dueDateYearToggleCaretEl = dueDateYearToggleEl?.querySelector(".due-date-select-caret");
+  const dueDateGridEl = document.getElementById("due-date-grid");
   const filterAllOptionEl = filterMenuEl?.querySelector(`[data-filter-value="${FILTER_VALUE_ALL}"]`);
   const filterNoneOptionEl = filterMenuEl?.querySelector(`[data-filter-value="${FILTER_VALUE_NONE}"]`);
 
@@ -322,7 +443,6 @@ function initApp() {
     !taskListEl ||
     !editorEl ||
     !composerEl ||
-    !toolbarEl ||
     !filterPickerEl ||
     !filterToggleEl ||
     !filterToggleLabelEl ||
@@ -341,7 +461,20 @@ function initApp() {
     !templateAddTriggerEl ||
     !templateAddFormEl ||
     !templateAddInputEl ||
-    !templateClearOptionEl
+    !templateClearOptionEl ||
+    !dueDatePickerEl ||
+    !dueDateInputEl ||
+    !dueDateToggleEl ||
+    !dueDateMenuEl ||
+    !dueDateMonthToggleEl ||
+    !dueDateMonthLabelEl ||
+    !dueDateMonthMenuEl ||
+    !dueDateMonthToggleCaretEl ||
+    !dueDateYearToggleEl ||
+    !dueDateYearLabelEl ||
+    !dueDateYearMenuEl ||
+    !dueDateYearToggleCaretEl ||
+    !dueDateGridEl
   ) {
     throw new Error("App could not initialize due to missing required DOM nodes.");
   }
@@ -349,8 +482,14 @@ function initApp() {
   const state = loadState();
   let templateMenuOpen = false;
   let filterMenuOpen = false;
+  let dueDateMenuOpen = false;
+  let dueDateMonthMenuOpen = false;
+  let dueDateYearMenuOpen = false;
+  let dueDateViewDate = new Date();
+  dueDateViewDate.setDate(1);
   let placementRafId = 0;
   const pendingCompletionTimers = new Map();
+  state.composerDueDate = normalizeDueDate(state.composerDueDate);
   saveState(state);
 
   function resetTemplateMenuPlacement() {
@@ -494,6 +633,216 @@ function initApp() {
     filterToggleCaretEl.textContent = isOpen ? "▴" : "▾";
   }
 
+  function setDueDateViewMonthFromValue(isoDate = null) {
+    const parsed = isoDate ? parseIsoDate(isoDate) : null;
+    const source = parsed || new Date();
+    dueDateViewDate = new Date(source.getFullYear(), source.getMonth(), 1);
+  }
+
+  function scrollDueDateSelectToCurrentOption(menuEl) {
+    const selectedOption = menuEl.querySelector(".due-date-select-option.is-selected");
+    if (!selectedOption) {
+      return;
+    }
+    selectedOption.scrollIntoView({ block: "nearest" });
+  }
+
+  function setDueDateMonthMenuOpen(isOpen) {
+    dueDateMonthMenuOpen = isOpen;
+    dueDateMonthMenuEl.hidden = !isOpen;
+    dueDateMonthToggleEl.setAttribute("aria-expanded", String(isOpen));
+    dueDateMonthToggleCaretEl.textContent = isOpen ? "▴" : "▾";
+    if (isOpen) {
+      dueDateYearMenuOpen = false;
+      dueDateYearMenuEl.hidden = true;
+      dueDateYearToggleEl.setAttribute("aria-expanded", "false");
+      dueDateYearToggleCaretEl.textContent = "▾";
+      scrollDueDateSelectToCurrentOption(dueDateMonthMenuEl);
+    }
+  }
+
+  function setDueDateYearMenuOpen(isOpen) {
+    dueDateYearMenuOpen = isOpen;
+    dueDateYearMenuEl.hidden = !isOpen;
+    dueDateYearToggleEl.setAttribute("aria-expanded", String(isOpen));
+    dueDateYearToggleCaretEl.textContent = isOpen ? "▴" : "▾";
+    if (isOpen) {
+      dueDateMonthMenuOpen = false;
+      dueDateMonthMenuEl.hidden = true;
+      dueDateMonthToggleEl.setAttribute("aria-expanded", "false");
+      dueDateMonthToggleCaretEl.textContent = "▾";
+      scrollDueDateSelectToCurrentOption(dueDateYearMenuEl);
+    }
+  }
+
+  function closeDueDateHeaderMenus() {
+    dueDateMonthMenuOpen = false;
+    dueDateYearMenuOpen = false;
+    dueDateMonthMenuEl.hidden = true;
+    dueDateYearMenuEl.hidden = true;
+    dueDateMonthToggleEl.setAttribute("aria-expanded", "false");
+    dueDateYearToggleEl.setAttribute("aria-expanded", "false");
+    dueDateMonthToggleCaretEl.textContent = "▾";
+    dueDateYearToggleCaretEl.textContent = "▾";
+  }
+
+  function renderDueDateCalendar() {
+    dueDateMonthLabelEl.textContent = DUE_DATE_MONTH_NAMES[dueDateViewDate.getMonth()];
+    dueDateMonthMenuEl.innerHTML = "";
+    DUE_DATE_MONTH_NAMES.forEach((monthName, monthIndex) => {
+      const optionButton = document.createElement("button");
+      optionButton.type = "button";
+      optionButton.className = "due-date-select-option";
+      optionButton.dataset.action = "due-date-select-month";
+      optionButton.dataset.monthValue = String(monthIndex);
+      optionButton.textContent = monthName;
+      if (monthIndex === dueDateViewDate.getMonth()) {
+        optionButton.classList.add("is-selected");
+      }
+      dueDateMonthMenuEl.append(optionButton);
+    });
+
+    const viewYear = dueDateViewDate.getFullYear();
+    dueDateYearLabelEl.textContent = String(viewYear);
+    dueDateYearMenuEl.innerHTML = "";
+    const yearStart = viewYear - DUE_DATE_YEAR_RANGE;
+    const yearEnd = viewYear + DUE_DATE_YEAR_RANGE;
+    for (let year = yearStart; year <= yearEnd; year += 1) {
+      const optionButton = document.createElement("button");
+      optionButton.type = "button";
+      optionButton.className = "due-date-select-option";
+      optionButton.dataset.action = "due-date-select-year";
+      optionButton.dataset.yearValue = String(year);
+      optionButton.textContent = String(year);
+      if (year === viewYear) {
+        optionButton.classList.add("is-selected");
+      }
+      dueDateYearMenuEl.append(optionButton);
+    }
+    if (dueDateMonthMenuOpen) {
+      scrollDueDateSelectToCurrentOption(dueDateMonthMenuEl);
+    }
+    if (dueDateYearMenuOpen) {
+      scrollDueDateSelectToCurrentOption(dueDateYearMenuEl);
+    }
+
+    dueDateGridEl.innerHTML = "";
+
+    const firstDayOfMonth = new Date(dueDateViewDate.getFullYear(), dueDateViewDate.getMonth(), 1);
+    const startWeekday = (firstDayOfMonth.getDay() + 6) % 7;
+    const daysInMonth = new Date(
+      dueDateViewDate.getFullYear(),
+      dueDateViewDate.getMonth() + 1,
+      0
+    ).getDate();
+    const daysInPreviousMonth = new Date(
+      dueDateViewDate.getFullYear(),
+      dueDateViewDate.getMonth(),
+      0
+    ).getDate();
+
+    const selectedDueDate = state.composerDueDate;
+    const todayIsoDate = toIsoDateFromLocalDate(new Date());
+    const fragment = document.createDocumentFragment();
+
+    for (let i = 0; i < 42; i += 1) {
+      let monthOffset = 0;
+      let dayNumber = 0;
+
+      if (i < startWeekday) {
+        monthOffset = -1;
+        dayNumber = daysInPreviousMonth - startWeekday + i + 1;
+      } else if (i >= startWeekday + daysInMonth) {
+        monthOffset = 1;
+        dayNumber = i - (startWeekday + daysInMonth) + 1;
+      } else {
+        dayNumber = i - startWeekday + 1;
+      }
+
+      const date = new Date(
+        dueDateViewDate.getFullYear(),
+        dueDateViewDate.getMonth() + monthOffset,
+        dayNumber
+      );
+      const isoDate = toIsoDateFromLocalDate(date);
+
+      const dayButton = document.createElement("button");
+      dayButton.type = "button";
+      dayButton.className = "due-date-day";
+      if (monthOffset !== 0) {
+        dayButton.classList.add("is-outside");
+      }
+      if (isoDate === todayIsoDate) {
+        dayButton.classList.add("is-today");
+      }
+      if (selectedDueDate && isoDate === selectedDueDate) {
+        dayButton.classList.add("is-selected");
+      }
+      dayButton.dataset.action = "due-date-select";
+      dayButton.dataset.dueDateValue = isoDate;
+      dayButton.textContent = String(date.getDate());
+      dayButton.setAttribute("aria-label", formatDueDateInput(isoDate));
+      fragment.append(dayButton);
+    }
+
+    dueDateGridEl.append(fragment);
+  }
+
+  function setDueDateMenuOpen(isOpen) {
+    dueDateMenuOpen = isOpen;
+    dueDateMenuEl.hidden = !isOpen;
+    dueDateToggleEl.setAttribute("aria-expanded", String(isOpen));
+
+    if (isOpen) {
+      closeDueDateHeaderMenus();
+      setDueDateViewMonthFromValue(state.composerDueDate);
+      renderDueDateCalendar();
+      return;
+    }
+
+    closeDueDateHeaderMenus();
+  }
+
+  function renderDueDateControl() {
+    if (document.activeElement !== dueDateInputEl) {
+      dueDateInputEl.value = state.composerDueDate ? formatDueDateInput(state.composerDueDate) : "";
+    }
+
+    dueDateToggleEl.setAttribute(
+      "aria-label",
+      state.composerDueDate
+        ? `Open due date calendar. Current: ${formatDueDateInput(state.composerDueDate)}`
+        : "Open due date calendar"
+    );
+
+    if (dueDateMenuOpen) {
+      renderDueDateCalendar();
+    }
+  }
+
+  function commitDueDateInputValue(rawValue) {
+    const parsedValue = parseDueDateInput(rawValue);
+    if (parsedValue.status === "invalid") {
+      dueDateInputEl.setAttribute("aria-invalid", "true");
+      dueDateInputEl.value = state.composerDueDate ? formatDueDateInput(state.composerDueDate) : "";
+      return false;
+    }
+
+    state.composerDueDate = parsedValue.value;
+    dueDateInputEl.setAttribute("aria-invalid", "false");
+    dueDateInputEl.value = state.composerDueDate ? formatDueDateInput(state.composerDueDate) : "";
+
+    if (state.composerDueDate) {
+      setDueDateViewMonthFromValue(state.composerDueDate);
+    }
+
+    if (dueDateMenuOpen) {
+      renderDueDateCalendar();
+    }
+
+    return true;
+  }
+
   function renderFilterDropdown() {
     const resolvedActiveFilter = resolveActiveFilter(state.activeFilter, state.templates);
     const activeFilterValue = toFilterValue(resolvedActiveFilter);
@@ -599,9 +948,13 @@ function initApp() {
     if (isCompletedView && templateMenuOpen) {
       setTemplateMenuOpen(false);
     }
+    if (isCompletedView && dueDateMenuOpen) {
+      setDueDateMenuOpen(false);
+    }
 
     renderTemplateDropdown();
     renderFilterDropdown();
+    renderDueDateControl();
 
     const visibleTasks = getVisibleTasks(state);
     const emptyState = getEmptyState(state, visibleTasks);
@@ -619,8 +972,10 @@ function initApp() {
     }
 
     const { html } = getEditorContent(editorEl);
-    const task = createTask(html, state.composerTemplate);
+    const task = createTask(html, state.composerTemplate, state.composerDueDate);
     state.tasks.push(task);
+    state.composerDueDate = null;
+    dueDateInputEl.setAttribute("aria-invalid", "false");
     saveState(state);
 
     renderApp();
@@ -741,7 +1096,147 @@ function initApp() {
     if (templateMenuOpen) {
       setTemplateMenuOpen(false);
     }
+    if (dueDateMenuOpen) {
+      setDueDateMenuOpen(false);
+    }
     setFilterMenuOpen(!filterMenuOpen);
+  }
+
+  function handleDueDateToggleClick() {
+    if (templateMenuOpen) {
+      setTemplateMenuOpen(false);
+    }
+    if (filterMenuOpen) {
+      setFilterMenuOpen(false);
+    }
+
+    const shouldOpen = !dueDateMenuOpen;
+    setDueDateMenuOpen(shouldOpen);
+    if (shouldOpen) {
+      dueDateInputEl.focus();
+    }
+  }
+
+  function handleDueDateInputFocus() {
+    if (templateMenuOpen) {
+      setTemplateMenuOpen(false);
+    }
+    if (filterMenuOpen) {
+      setFilterMenuOpen(false);
+    }
+    setDueDateMenuOpen(true);
+  }
+
+  function handleDueDateInputBlur(event) {
+    const nextFocusedEl = event.relatedTarget;
+    if (nextFocusedEl && dueDatePickerEl.contains(nextFocusedEl)) {
+      return;
+    }
+    commitDueDateInputValue(dueDateInputEl.value);
+    renderDueDateControl();
+  }
+
+  function handleDueDateInputKeydown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitDueDateInputValue(dueDateInputEl.value);
+      setDueDateMenuOpen(false);
+      focusEditor(editorEl);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setDueDateMenuOpen(true);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setDueDateMenuOpen(false);
+      dueDateInputEl.value = state.composerDueDate ? formatDueDateInput(state.composerDueDate) : "";
+      dueDateInputEl.setAttribute("aria-invalid", "false");
+      focusEditor(editorEl);
+    }
+  }
+
+  function handleDueDateMenuAction(event) {
+    const actionEl = event.target.closest("[data-action]");
+    if (!actionEl) {
+      return;
+    }
+
+    const action = actionEl.dataset.action;
+    if (action === "due-date-toggle-month-menu") {
+      setDueDateMonthMenuOpen(!dueDateMonthMenuOpen);
+      return;
+    }
+
+    if (action === "due-date-toggle-year-menu") {
+      setDueDateYearMenuOpen(!dueDateYearMenuOpen);
+      return;
+    }
+
+    if (action === "due-date-select-month") {
+      const month = Number(actionEl.dataset.monthValue);
+      if (!Number.isInteger(month) || month < 0 || month > 11) {
+        return;
+      }
+      dueDateViewDate = new Date(dueDateViewDate.getFullYear(), month, 1);
+      setDueDateMonthMenuOpen(false);
+      renderDueDateCalendar();
+      return;
+    }
+
+    if (action === "due-date-select-year") {
+      const year = Number(actionEl.dataset.yearValue);
+      if (!Number.isInteger(year) || year < 1 || year > 9999) {
+        return;
+      }
+      dueDateViewDate = new Date(year, dueDateViewDate.getMonth(), 1);
+      setDueDateYearMenuOpen(false);
+      renderDueDateCalendar();
+      return;
+    }
+
+    if (dueDateMonthMenuOpen || dueDateYearMenuOpen) {
+      closeDueDateHeaderMenus();
+    }
+
+    if (action === "due-date-prev-month" || action === "due-date-next-month") {
+      const monthOffset = action === "due-date-prev-month" ? -1 : 1;
+      dueDateViewDate = new Date(
+        dueDateViewDate.getFullYear(),
+        dueDateViewDate.getMonth() + monthOffset,
+        1
+      );
+      renderDueDateCalendar();
+      return;
+    }
+
+    if (action === "due-date-today") {
+      state.composerDueDate = toIsoDateFromLocalDate(new Date());
+      dueDateInputEl.value = formatDueDateInput(state.composerDueDate);
+      dueDateInputEl.setAttribute("aria-invalid", "false");
+      setDueDateViewMonthFromValue(state.composerDueDate);
+      setDueDateMenuOpen(false);
+      renderDueDateControl();
+      focusEditor(editorEl);
+      return;
+    }
+
+    if (action === "due-date-select") {
+      const selectedDueDate = normalizeDueDate(actionEl.dataset.dueDateValue);
+      if (!selectedDueDate) {
+        return;
+      }
+      state.composerDueDate = selectedDueDate;
+      dueDateInputEl.value = formatDueDateInput(state.composerDueDate);
+      dueDateInputEl.setAttribute("aria-invalid", "false");
+      setDueDateMenuOpen(false);
+      renderDueDateControl();
+      focusEditor(editorEl);
+    }
   }
 
   function handleCompletedTabToggle() {
@@ -811,6 +1306,9 @@ function initApp() {
     if (filterMenuOpen) {
       setFilterMenuOpen(false);
     }
+    if (dueDateMenuOpen) {
+      setDueDateMenuOpen(false);
+    }
     setTemplateMenuOpen(!templateMenuOpen);
   }
 
@@ -821,6 +1319,10 @@ function initApp() {
 
     if (filterMenuOpen && !filterPickerEl.contains(event.target)) {
       setFilterMenuOpen(false);
+    }
+
+    if (dueDateMenuOpen && !dueDatePickerEl.contains(event.target)) {
+      setDueDateMenuOpen(false);
     }
   }
 
@@ -851,6 +1353,17 @@ function initApp() {
       return;
     }
 
+    if (dueDateMenuOpen) {
+      event.preventDefault();
+      if (dueDateMonthMenuOpen || dueDateYearMenuOpen) {
+        closeDueDateHeaderMenus();
+        return;
+      }
+      setDueDateMenuOpen(false);
+      dueDateInputEl.focus();
+      return;
+    }
+
     if (templateMenuOpen) {
       event.preventDefault();
       setTemplateMenuOpen(false);
@@ -875,7 +1388,7 @@ function initApp() {
     templateToggleEl.focus();
   }
 
-  initEditor(editorEl, toolbarEl);
+  initEditor(editorEl);
   renderApp();
   if (state.activeView === VIEW_MODE_TASKS) {
     focusEditor(editorEl);
@@ -886,6 +1399,11 @@ function initApp() {
   completedTabToggleEl.addEventListener("click", handleCompletedTabToggle);
   filterToggleEl.addEventListener("click", handleFilterToggleClick);
   filterMenuEl.addEventListener("click", handleFilterMenuAction);
+  dueDateToggleEl.addEventListener("click", handleDueDateToggleClick);
+  dueDateInputEl.addEventListener("focus", handleDueDateInputFocus);
+  dueDateInputEl.addEventListener("blur", handleDueDateInputBlur);
+  dueDateInputEl.addEventListener("keydown", handleDueDateInputKeydown);
+  dueDateMenuEl.addEventListener("click", handleDueDateMenuAction);
   templateToggleEl.addEventListener("click", handleTemplateToggleClick);
   templateMenuEl.addEventListener("click", handleTemplateMenuAction);
   templateAddFormEl.addEventListener("submit", handleTemplateAddSubmit);
